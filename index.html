@@ -1,0 +1,1185 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Searchy</title>
+  <style>
+    :root { color-scheme: dark; --panel-bg: #171a1f; --panel-line: #363c46; --panel-accent: #7257e8; }
+    * { box-sizing: border-box; }
+    html, body { min-width: 0; width: 100%; min-height: 100%; height: 100%; }
+    body { display: flex; flex-direction: column; margin: 0; padding: 7px; color: #dce0e8; background: var(--panel-bg); font: 11px "Segoe UI", Arial, sans-serif; overflow: hidden; }
+    header { position: relative; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; min-height: 25px; margin: 0 0 5px; padding: 0 1px 4px; border-bottom: 1px solid var(--panel-line); }
+    h1 { margin: 0; color: #f3f4f7; font-size: 13px; font-weight: 600; letter-spacing: .1px; }
+    .subtitle { display: none; }
+    .search-wrap { position: relative; flex: 0 0 auto; margin: 2px 0 5px; }
+    #search-input { display: block; width: 100%; min-width: 0; height: 30px; padding: 3px 27px 3px 29px; color: #f0f0f0; background: #111318; border: 1px solid #4c5260; border-radius: 5px; font: 11px "Segoe UI", Arial, sans-serif; outline: none; }
+    #search-input:hover { border-color: #686868; }
+    #search-input:focus { border-color: #8a70ff; box-shadow: 0 0 0 1px rgba(114,87,232,.3); }
+    #search-input::placeholder { color: #929292; }
+    .search-icon { position: absolute; left: 10px; top: 7px; width: 12px; height: 12px; color: #b8bfca; pointer-events: none; }
+    #search-clear { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; color: #c5cad3; background: transparent; border: 0; border-radius: 3px; cursor: pointer; font: 16px/20px "Segoe UI", Arial, sans-serif; }
+    #search-clear:hover, #search-clear:focus-visible { color: #fff; background: #343945; outline: none; }
+    .filter-tabs { display: flex; flex: 0 0 auto; gap: 3px; min-width: 0; margin: 0 0 5px; }
+    .filter-tab { flex: 1 1 0; min-width: 0; height: 25px; padding: 2px 4px; overflow: hidden; color: #cbd0da; background: #292e37; border: 1px solid #343a45; border-radius: 4px; cursor: pointer; font: 10px "Segoe UI", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .filter-tab:hover { color: #fff; background: #373d49; }
+    .filter-tab[aria-selected="true"] { color: #fff; background: linear-gradient(#765be9,#5b42cb); border-color: #8069ed; }
+    .filter-tab:focus-visible, .settings-toggle:focus-visible { outline: 1px solid #a795ff; outline-offset: 1px; }
+    .settings-toggle { flex: 0 0 auto; width: 25px; height: 23px; padding: 1px 0; color: #c0c6d0; background: transparent; border: 0; border-radius: 3px; cursor: pointer; font-size: 16px; line-height: 19px; }
+    .settings-toggle:hover, .settings-toggle[aria-expanded="true"] { color: #fff; background: #343945; }
+    #settings-menu { position: absolute; z-index: 20; top: 25px; right: 0; width: min(240px, calc(100vw - 14px)); max-height: min(65vh, 360px); padding: 5px; overflow: auto; background: #252a32; border: 1px solid #454c58; border-radius: 5px; box-shadow: 0 7px 20px rgba(0,0,0,.45); }
+    #settings-menu[hidden] { display: none; }
+    .tool-row { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+    .tool-button { width: 100%; height: 25px; padding: 3px 7px; color: #d9dde5; background: transparent; border: 1px solid transparent; border-radius: 3px; text-align: left; cursor: pointer; font: 10px "Segoe UI", Arial, sans-serif; }
+    .tool-button:hover { background: #353b46; border-color: #454c58; }
+    .folder-settings { margin: 5px 0 0; border-top: 1px solid #3b414b; border-bottom: 0; }
+    .folder-summary { min-height: 23px; padding: 5px 3px; }
+    #custom-folders { max-height: 130px; overflow: auto; }
+    .result-summary { min-height: 17px; margin: 3px 1px 2px; color: #a8a8a8; font-size: 10px; }
+    #quick-apply-drop { display: flex; align-items: center; min-height: 23px; margin: 2px 0 4px; padding: 3px 6px; color: #aaa; background: #202020; border: 1px dashed #555; border-radius: 3px; font-size: 10px; }
+    #quick-apply-drop.drag-active { color: #fff; background: #293a49; border-color: #78a8d4; }
+    #quick-apply-drop.drag-ready { color: #e5eee7; background: #29392d; border-color: #71947a; }
+    .discovery-row { display: block; max-width: 100%; margin: 2px 1px; overflow: hidden; color: #999; font-size: 10px; line-height: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .tool-row { display: flex; gap: 4px; margin: 5px 0 4px; }
+    .tool-button, .remove-folder, .more-button, .apply-preset, .apply-effect { min-width: 0; height: 22px; padding: 2px 6px; color: #d5d5d5; background: #333; border: 1px solid #4b4b4b; border-radius: 3px; cursor: pointer; font: 10px "Segoe UI", Arial, sans-serif; }
+    .tool-button { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tool-button:hover, .remove-folder:hover, .more-button:hover, .apply-preset:hover, .apply-effect:hover { background: #414141; color: #fff; border-color: #606060; }
+    .tool-button:focus-visible, .remove-folder:focus-visible, .more-button:focus-visible, .apply-preset:focus-visible, .apply-effect:focus-visible, #quick-apply-drop:focus-visible { outline: 1px solid #78a8d4; outline-offset: 1px; }
+    .tool-button:disabled { opacity: .6; cursor: wait; }
+    .folder-settings { margin: 3px 0; border-top: 1px solid #3b3b3b; border-bottom: 1px solid #3b3b3b; }
+    .folder-summary, .tree-heading { display: block; min-height: 21px; padding: 4px; color: #cecece; background: transparent; cursor: pointer; font-size: 11px; line-height: 13px; list-style: none; white-space: nowrap; }
+    .tree-heading { display: flex; align-items: center; min-width: 0; overflow: hidden; }
+    .folder-summary::-webkit-details-marker, .tree-heading::-webkit-details-marker { display: none; }
+    .folder-summary::before, .tree-heading::before { display: inline-block; width: 0; height: 0; margin: 0 7px 1px 2px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 5px solid #999; content: ''; transition: transform 80ms linear; }
+    .tree-heading::before { flex: 0 0 auto; }
+    details[open] > .folder-summary::before, details[open] > .tree-heading::before { transform: rotate(90deg); }
+    .folder-summary:hover, .tree-heading:hover { color: #f4f4f4; background: #303030; }
+    .folder-summary:focus-visible, .tree-heading:focus-visible { outline: 1px solid #78a8d4; outline-offset: -1px; }
+    #custom-folders { padding: 1px 2px 3px 14px; }
+    .folder-row { display: flex; align-items: center; gap: 4px; min-width: 0; height: 21px; color: #aaa; }
+    .folder-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+    .remove-folder { flex: 0 0 auto; height: 18px; padding: 1px 5px; }
+    #results { display: block; flex: 1 1 auto; min-width: 0; min-height: 35px; overflow: auto; border-top: 1px solid var(--panel-line); scrollbar-color: #555c69 #1d2026; scrollbar-width: thin; }
+    .tree-root { display: block; border-bottom: 1px solid #353535; }
+    .tree-heading.root-heading { min-height: 23px; padding-top: 5px; font-weight: 600; }
+    .tree-heading.match-parent, .tree-heading.match-parent:hover { color: #eadcff; background: rgba(125, 72, 210, .22); box-shadow: inset 3px 0 #a467f7; }
+    .tree-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-count { flex: 0 0 auto; margin-left: 5px; margin-right: 4px; color: #929292; font-weight: normal; font-size: 10px; }
+    .tree-children { min-width: 0; }
+    .tree-category { display: block; }
+    .tree-heading.category-heading { padding-left: 17px; }
+    .tree-row-wrap { display: flex; align-items: center; min-width: 0; min-height: 34px; padding-right: 3px; border-bottom: 1px solid rgba(255,255,255,.025); }
+    .tree-row-wrap:hover { background: #272c35; }
+    .tree-row { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-rows: 17px 13px; align-content: center; column-gap: 5px; flex: 1; min-width: 0; min-height: 34px; padding: 2px 5px 2px 23px; color: #dce0e8; background: transparent; border: 0; text-align: left; cursor: grab; font: 11px "Segoe UI", Arial, sans-serif; }
+    .tree-row::before { position: absolute; left: 6px; top: 9px; color: #c4c9d3; font-size: 13px; line-height: 14px; }
+    .tree-row[data-type="effect"]::before { content: "ƒx"; font-style: italic; }
+    .tree-row[data-type="plugin"]::before { content: "◆"; color: #c27be2; font-size: 10px; }
+    .tree-row[data-type="preset"]::before { content: "▤"; color: #c9d0da; }
+    .tree-row:active { cursor: grabbing; }
+    .tree-row:focus-visible { outline: 1px solid #a795ff; outline-offset: -1px; }
+    .tree-row.selected, .tree-row[aria-pressed="true"] { color: #fff; background: #3c3274; }
+    .tree-row:hover { color: #fff; background: #373737; }
+    .row-name { grid-column: 1; grid-row: 1; min-width: 0; overflow: hidden; color: #f0f1f5; text-overflow: ellipsis; white-space: nowrap; }
+    .row-subtitle { grid-column: 1; grid-row: 2; min-width: 0; overflow: hidden; color: #9ca4b1; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .row-status { grid-column: 2; grid-row: 1 / span 2; align-self: center; max-width: 64px; padding: 2px 5px; overflow: hidden; color: #f1edff; background: #403781; border-radius: 4px; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .row-status[data-type="plugin"] { color: #f8eaff; background: #6b3476; }
+    .row-status[data-type="preset"] { color: #eafff1; background: #286347; }
+    .row-apply { flex: 0 0 auto; height: 18px; padding: 1px 6px; }
+    .more-button { margin: 4px 0 5px 18px; }
+    .empty { padding: 8px 5px; color: #999; font-size: 10px; }
+    .panel-footer { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; min-height: 25px; margin-top: 4px; padding: 3px 2px 0; color: #aab1bd; border-top: 1px solid var(--panel-line); }
+    #local-status { flex: 1; min-width: 0; margin: 0; overflow: hidden; color: #b9c0cb; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .panel-status { flex: 1; min-width: 0; overflow: hidden; color: #b9c0cb; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .panel-status.error { color: #f0a1a1; }
+    #local-status[hidden], #drag-diagnostic-status[hidden], .discovery-row[hidden] { display: none !important; }
+    .result-summary { flex: 0 0 auto; min-height: 0; margin: 0; color: #c7ccd5; font-size: 9px; white-space: nowrap; }
+    @media (max-width: 280px) {
+      body { padding: 4px; }
+      .filter-tabs { gap: 2px; }
+      .filter-tab { padding: 2px; font-size: 9px; }
+      .row-status { max-width: 48px; padding: 2px 3px; }
+      .tree-row { padding-left: 13px; }
+      .tree-heading.category-heading { padding-left: 13px; }
+    }
+    @media (max-height: 240px) { .discovery-row:not(#drag-diagnostic-status) { display: none; } #quick-apply-drop { min-height: 16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Searchy</h1>
+    <button id="settings-toggle" class="settings-toggle" type="button" aria-label="Searchy settings" aria-expanded="false" aria-controls="settings-menu" title="Settings">⚙</button>
+    <div id="settings-menu" hidden>
+      <div class="tool-row">
+        <button id="add-preset-folder" class="tool-button" type="button" title="Add a folder containing animation presets">Add Folder</button>
+        <button id="refresh-local" class="tool-button" type="button" title="Rescan local preset and plug-in files">Rescan Files</button>
+        <button id="refresh-effects" class="tool-button" type="button" title="Refresh the After Effects effect list">Refresh Effects</button>
+      </div>
+      <details id="folder-settings" class="folder-settings">
+        <summary id="folder-summary" class="folder-summary">Custom preset folders</summary>
+        <div id="custom-folders" aria-label="Custom preset folders"></div>
+      </details>
+    </div>
+  </header>
+
+  <div class="search-wrap">
+    <span class="search-icon" aria-hidden="true">⌕</span>
+    <input id="search-input" type="search" autocomplete="off" spellcheck="false"
+      aria-label="Search effects and presets" placeholder="Search effects, plugins and presets…">
+    <button id="search-clear" type="button" aria-label="Clear search" title="Clear search">×</button>
+  </div>
+
+  <div id="filter-tabs" class="filter-tabs" role="tablist" aria-label="Filter catalogue by type">
+    <button class="filter-tab" type="button" role="tab" data-filter="all" aria-selected="true">All <span data-tab-count="all">0</span></button>
+    <button class="filter-tab" type="button" role="tab" data-filter="effect" aria-selected="false">Effects <span data-tab-count="effect">0</span></button>
+    <button class="filter-tab" type="button" role="tab" data-filter="plugin" aria-selected="false">Plugins <span data-tab-count="plugin">0</span></button>
+    <button class="filter-tab" type="button" role="tab" data-filter="preset" aria-selected="false">Presets <span data-tab-count="preset">0</span></button>
+  </div>
+
+  <div class="discovery-row" hidden>
+    <span id="discovery-status" aria-live="polite">Effect list not loaded yet.</span>
+  </div>
+
+  <div id="quick-apply-drop" role="status" aria-label="Drop an effect or preset anywhere in this panel to apply it to selected layers" title="Drop an effect or preset anywhere in Searchy to apply it to the layer(s) currently selected in After Effects.">Drop an effect or preset anywhere in this panel to apply</div>
+  <div id="drag-diagnostic-status" class="discovery-row" role="status" aria-live="polite" hidden>Drag test: ready. Drop an effect or preset anywhere in Searchy.</div>
+  <main id="results" aria-live="polite">
+    <div class="empty">Loading local catalogue…</div>
+  </main>
+  <footer class="panel-footer">
+    <span id="panel-status" class="panel-status" role="status" aria-live="polite">Ready</span>
+    <span id="local-status" aria-live="polite" hidden>Local files not loaded yet.</span>
+    <span id="result-count" class="result-summary" aria-live="polite">Browse or search</span>
+  </footer>
+
+  <script src="./client/search/searchEngine.js"></script>
+  <script src="./client/search/effectDiscovery.js"></script>
+  <script src="./client/search/localDiscovery.js"></script>
+  <script src="./client/search/resultTree.js"></script>
+  <script>
+    (function () {
+      var input = document.getElementById('search-input');
+      var results = document.getElementById('results');
+      var count = document.getElementById('result-count');
+      var panelStatus = document.getElementById('panel-status');
+      var discoveryStatus = document.getElementById('discovery-status');
+      var localStatus = document.getElementById('local-status');
+      var refreshButton = document.getElementById('refresh-effects');
+      var refreshLocalButton = document.getElementById('refresh-local');
+      var addFolderButton = document.getElementById('add-preset-folder');
+      var customFoldersElement = document.getElementById('custom-folders');
+      var folderSummary = document.getElementById('folder-summary');
+      var settingsToggle = document.getElementById('settings-toggle');
+      var settingsMenu = document.getElementById('settings-menu');
+      var clearSearchButton = document.getElementById('search-clear');
+      var filterTabs = document.getElementById('filter-tabs');
+      var quickApplyDrop = document.getElementById('quick-apply-drop');
+      var dragDiagnosticStatus = document.getElementById('drag-diagnostic-status');
+      var customFolders = window.AEUSLocalDiscovery.readFolders(window.localStorage);
+      var discoveredEffects = [];
+      var localPresets = [];
+      var pluginFiles = [];
+      var searchCatalogue = [];
+      var catalogueTreeIndex = null;
+      var browseTreeCache = null;
+      var browseTreeCaches = {};
+      var activeFilter = 'all';
+      var effectsLoaded = false;
+      var effectHostVersion = '';
+      var localLoaded = false;
+      var selectedResultId = '';
+      var applicationPending = false;
+      var dragTraceSequence = 0;
+      var activeDragTrace = null;
+      var dragDiagnosticLogPath = '';
+      var queuedDragDiagnostics = [];
+      var pendingDragEventDiagnostics = [];
+      var dragEventFlushScheduled = false;
+      var dragDiagnosticEventSequence = 0;
+      var dragDiagnosticWriteError = '';
+      var initialGroupLimit = 12;
+      var panelStatusSequence = 0;
+
+      function setPanelStatus(message, kind, detail, resetDelay) {
+        var sequence = ++panelStatusSequence;
+        panelStatus.textContent = message || 'Ready';
+        panelStatus.className = 'panel-status' + (kind === 'error' ? ' error' : '');
+        panelStatus.title = detail || '';
+        if (resetDelay) window.setTimeout(function () {
+          if (sequence === panelStatusSequence) setPanelStatus('Ready');
+        }, resetDelay);
+      }
+
+      function rebuildSearchCatalogue() {
+        searchCatalogue = discoveredEffects.concat(pluginFiles, localPresets);
+        catalogueTreeIndex = window.AEUSResultTree.createIndex(searchCatalogue);
+        browseTreeCache = window.AEUSResultTree.build(searchCatalogue, [], false, catalogueTreeIndex);
+        browseTreeCaches = { all: browseTreeCache };
+        ['effect', 'plugin', 'preset'].forEach(function (type) {
+          var subset = searchCatalogue.filter(function (item) { return item.type === type; });
+          browseTreeCaches[type] = window.AEUSResultTree.build(subset, [], false, catalogueTreeIndex);
+        });
+      }
+
+      function itemsForFilter(items, filter) {
+        if (!filter || filter === 'all') return items;
+        return items.filter(function (entry) { var item = entry && entry.item ? entry.item : entry; return item && item.type === filter; });
+      }
+
+      function updateTabCounts(items) {
+        var totals = { all: items.length, effect: 0, plugin: 0, preset: 0 };
+        items.forEach(function (entry) { var item = entry && entry.item ? entry.item : entry; if (item && totals[item.type] !== undefined) totals[item.type] += 1; });
+        Array.prototype.slice.call(filterTabs.querySelectorAll('[data-tab-count]')).forEach(function (badge) {
+          var key = badge.getAttribute('data-tab-count');
+          badge.textContent = String(totals[key] || 0);
+        });
+      }
+
+      function setSettingsOpen(open) {
+        settingsMenu.hidden = !open;
+        settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+
+      function quoteForExtendScript(value) {
+        return "'" + String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/[\r\n]/g, '') + "'";
+      }
+
+      function hostCall(expression, callback) {
+        if (!window.__adobe_cep__ || typeof window.__adobe_cep__.evalScript !== 'function') {
+          callback(null, 'After Effects connection is unavailable.');
+          return;
+        }
+        window.__adobe_cep__.evalScript(expression, function (raw) { callback(raw, null); });
+      }
+
+      function parseJson(raw) {
+        try { return JSON.parse(raw); } catch (error) { return null; }
+      }
+
+      function writeDragDiagnosticBatch(entries) {
+        var fs = window.cep && window.cep.fs;
+        var previous;
+        var lines;
+        var result;
+        if (!entries || !entries.length) return true;
+        if (!dragDiagnosticLogPath || !fs || typeof fs.readFile !== 'function' || typeof fs.writeFile !== 'function') {
+          queuedDragDiagnostics = queuedDragDiagnostics.concat(entries);
+          if (queuedDragDiagnostics.length > 100) queuedDragDiagnostics = queuedDragDiagnostics.slice(-100);
+          return false;
+        }
+        try {
+          previous = fs.readFile(dragDiagnosticLogPath);
+          lines = previous && previous.err === 0 && previous.data ? String(previous.data).split(/\r?\n/).filter(function (line) { return !!line; }) : [];
+          entries.forEach(function (entry) { lines.push(JSON.stringify(entry)); });
+          if (lines.length > 500) lines = lines.slice(lines.length - 500);
+          result = fs.writeFile(dragDiagnosticLogPath, lines.join('\n') + '\n');
+          if (!result || result.err !== 0) throw new Error('CEP writeFile returned ' + (result ? result.err : 'no result'));
+          dragDiagnosticWriteError = '';
+          return true;
+        } catch (error) {
+          dragDiagnosticWriteError = String(error && error.message || error);
+          localStatus.title = 'Persistent drag log write failed: ' + dragDiagnosticWriteError;
+          dragDiagnosticStatus.title = localStatus.title;
+          return false;
+        }
+      }
+
+      function writeDragDiagnostic(stage, traceId, details) {
+        return writeDragDiagnosticBatch([{ timestamp: new Date().toISOString(), stage: stage, traceId: traceId || null, details: details || {} }]);
+      }
+
+      function queueDragEventDiagnostic(stage, traceId, details) {
+        pendingDragEventDiagnostics.push({ timestamp: new Date().toISOString(), stage: stage, traceId: traceId || null, details: details || {} });
+        if (dragEventFlushScheduled) return;
+        dragEventFlushScheduled = true;
+        window.setTimeout(flushDragEventDiagnostics, 120);
+      }
+
+      function flushDragEventDiagnostics() {
+        dragEventFlushScheduled = false;
+        if (!pendingDragEventDiagnostics.length) return;
+        var batch = [];
+        var dragOverRecords = [];
+        pendingDragEventDiagnostics.forEach(function (entry) {
+          if (entry.stage.indexOf('document-dragover-') === 0) dragOverRecords.push(entry);
+          else batch.push(entry);
+        });
+        if (dragOverRecords.length) {
+          batch.push({
+            timestamp: new Date().toISOString(),
+            stage: 'document-dragover-observation-batch',
+            traceId: dragOverRecords[0].traceId,
+            details: { eventCount: dragOverRecords.filter(function (entry) { return entry.details.phase === 'document-capture'; }).length, records: dragOverRecords }
+          });
+        }
+        pendingDragEventDiagnostics = [];
+        writeDragDiagnosticBatch(batch);
+      }
+
+      function initializeDragDiagnosticLog() {
+        hostCall('getSearchyDragDiagnosticLogPath()', function (raw, callError) {
+          dragDiagnosticLogPath = !callError && raw ? String(raw).replace(/^\s+|\s+$/g, '') : '';
+          if (!dragDiagnosticLogPath) {
+            dragDiagnosticWriteError = callError || 'After Effects did not return the temporary log path.';
+            dragDiagnosticStatus.textContent = 'Drag trace persistence unavailable: ' + dragDiagnosticWriteError;
+            dragDiagnosticStatus.title = dragDiagnosticWriteError;
+            return;
+          }
+          var queued = queuedDragDiagnostics;
+          queuedDragDiagnostics = [];
+          if (queued.length) writeDragDiagnosticBatch(queued);
+          writeDragDiagnostic('diagnostic-log-ready', null, { path: dragDiagnosticLogPath, retentionLimit: 500 });
+          dragDiagnosticStatus.title = 'Persistent drag diagnostics: ' + dragDiagnosticLogPath;
+        });
+      }
+
+      function refreshEffects() {
+        refreshButton.disabled = true;
+        refreshButton.textContent = 'Reading…';
+        discoveryStatus.textContent = 'Reading effects listed by After Effects…';
+        setPanelStatus('Refreshing effects…');
+        hostCall('getEffectCatalogue()', function (raw, callError) {
+          if (callError) {
+            refreshButton.disabled = false;
+            refreshButton.textContent = 'Refresh Effects';
+            effectsLoaded = true;
+            discoveryStatus.textContent = callError;
+            setPanelStatus('Could not refresh the effect list.', 'error', callError);
+            render(input.value);
+            return;
+          }
+          var response = window.AEUSEffectDiscovery.parseResponse(raw);
+          refreshButton.disabled = false;
+          refreshButton.textContent = 'Refresh Effects';
+          effectsLoaded = true;
+          if (!response.ok) {
+            discoveredEffects = [];
+            discoveryStatus.textContent = 'Effect discovery failed: ' + response.error;
+            setPanelStatus('Could not refresh the effect list.', 'error', response.error);
+          } else {
+            discoveredEffects = response.items;
+            effectHostVersion = response.hostVersion || '';
+            discoveryStatus.textContent = response.count + ' host-listed effect' + (response.count === 1 ? '' : 's') +
+              (response.hostVersion ? ' · After Effects ' + response.hostVersion : '');
+            setPanelStatus('Ready');
+          }
+          rebuildSearchCatalogue();
+          render(input.value);
+        });
+      }
+
+      function renderFolders() {
+        customFoldersElement.textContent = '';
+        folderSummary.textContent = 'Custom preset folders (' + customFolders.length + ')';
+        customFolders.forEach(function (path) {
+          var row = document.createElement('div');
+          var label = document.createElement('span');
+          var remove = document.createElement('button');
+          row.className = 'folder-row';
+          label.className = 'folder-path';
+          label.textContent = path;
+          remove.className = 'remove-folder';
+          remove.type = 'button';
+          remove.textContent = 'Remove';
+          remove.addEventListener('click', function () {
+            var result = window.AEUSLocalDiscovery.removeFolder(window.localStorage, path);
+            customFolders = result.folders;
+            renderFolders();
+            refreshLocalFiles();
+          });
+          row.appendChild(label);
+          row.appendChild(remove);
+          customFoldersElement.appendChild(row);
+        });
+      }
+
+      function scanFolders(roots, type, done) {
+        var results = [];
+        var errors = [];
+        var index = 0;
+        var functionName = type === 'preset' ? 'scanLocalPresetFolder' : 'scanLocalPluginFolder';
+        function next() {
+          if (index >= roots.length) { done(results, errors); return; }
+          var root = roots[index++];
+          var expression = functionName + '(' + quoteForExtendScript(root.path) + ',' + quoteForExtendScript(root.source) + ')';
+          hostCall(expression, function (raw, callError) {
+            if (callError) errors.push(root.path + ': ' + callError);
+            else {
+              var response = window.AEUSLocalDiscovery.parseResponse(raw, type, root.path);
+              if (response.ok) results = results.concat(response.items);
+              else errors.push(root.path + ': ' + response.error);
+            }
+            next();
+          });
+        }
+        next();
+      }
+
+      function uniqueByPath(items) {
+        var seen = {};
+        return items.filter(function (item) {
+          var key = String(item.path || item.id).toLowerCase();
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        });
+      }
+
+      function refreshLocalFiles() {
+        refreshLocalButton.disabled = true;
+        refreshLocalButton.textContent = 'Scanning…';
+        localStatus.textContent = 'Scanning local preset and plug-in folders…';
+        setPanelStatus('Scanning folders…');
+        hostCall('getLocalDiscoveryRoots()', function (raw, callError) {
+          var roots = parseJson(raw);
+          if (callError || !roots || roots.ok !== true) {
+            refreshLocalButton.disabled = false;
+            refreshLocalButton.textContent = 'Rescan Files';
+            localLoaded = true;
+            localStatus.textContent = callError || (roots && roots.error) || 'Could not read local discovery folders.';
+            setPanelStatus('Could not scan local folders.', 'error', localStatus.textContent);
+            render(input.value);
+            return;
+          }
+          var presetRoots = (roots.presetRoots || []).slice();
+          var pluginRoots = (roots.pluginRoots || []).slice();
+          customFolders.forEach(function (path) {
+            presetRoots.push({ path: path, source: 'Custom preset folder' });
+          });
+          scanFolders(presetRoots, 'preset', function (presets, presetErrors) {
+            scanFolders(pluginRoots, 'plugin', function (plugins, pluginErrors) {
+              localPresets = uniqueByPath(presets);
+              pluginFiles = uniqueByPath(plugins);
+              rebuildSearchCatalogue();
+              refreshLocalButton.disabled = false;
+              refreshLocalButton.textContent = 'Rescan Files';
+              localLoaded = true;
+              localStatus.title = presetErrors.concat(pluginErrors).join('\n');
+              localStatus.textContent = localPresets.length + ' local .ffx files · ' + pluginFiles.length +
+                ' .aex files found' + (presetErrors.length || pluginErrors.length ? ' · ' + (presetErrors.length + pluginErrors.length) + ' folder warnings' : '');
+              setPanelStatus(presetErrors.length || pluginErrors.length ? 'Some folders could not be scanned.' : 'Ready', presetErrors.length || pluginErrors.length ? 'error' : '', localStatus.title);
+              render(input.value);
+            });
+          });
+        });
+      }
+
+      function addPresetFolder() {
+        if (!window.cep || !window.cep.fs || !window.cep.fs.showOpenDialogEx) {
+          localStatus.textContent = 'CEP folder picker is unavailable.';
+          setPanelStatus('Folder picker unavailable.', 'error', localStatus.textContent);
+          return;
+        }
+        var result = window.cep.fs.showOpenDialogEx(false, true, 'Add a preset folder', '', [], 'Folders', 'Select');
+        if (!result || result.err !== 0 || !result.data) return;
+        var path = Array.isArray(result.data) ? result.data[0] : result.data;
+        if (!path) return;
+        var stored = window.AEUSLocalDiscovery.addFolder(window.localStorage, path);
+        customFolders = stored.folders;
+        if (!stored.ok) { localStatus.textContent = stored.error; setPanelStatus('Could not save the folder.', 'error', stored.error); }
+        renderFolders();
+        refreshLocalFiles();
+      }
+
+      function applyPreset(item, completion) {
+        localStatus.textContent = 'Sending the preset to After Effects…';
+        setPanelStatus('Applying preset…');
+        hostCall('applyPresetToSelectedLayers(' + quoteForExtendScript(item.path) + ')', function (raw, callError) {
+          var response = parseJson(raw);
+          if (callError || !response || response.ok !== true) {
+            localStatus.textContent = (callError || (response && response.error)) || 'After Effects did not confirm the apply call.';
+            setPanelStatus('Preset could not be applied.', 'error', localStatus.textContent);
+          } else {
+            localStatus.textContent = response.message || 'After Effects completed the call; inspect the selected layers to verify changes.';
+            setPanelStatus('Preset applied.', '', localStatus.textContent, 1800);
+          }
+          if (typeof completion === 'function') completion({ bridgeCalled: true, response: response, callError: callError, raw: raw });
+        });
+      }
+
+      function applyEffect(item, completion) {
+        if (!item.matchName) {
+          localStatus.textContent = 'This effect has no host identifier and cannot be applied.';
+          setPanelStatus('This effect cannot be applied.', 'error', localStatus.textContent);
+          if (typeof completion === 'function') completion({ bridgeCalled: false, response: { ok: false, stage: 'validation', error: 'This effect has no host identifier.' } });
+          return;
+        }
+        localStatus.textContent = 'Checking the selected layer and effect in After Effects…';
+        setPanelStatus('Applying effect…');
+        hostCall('applyEffectToSelectedLayers(' + quoteForExtendScript(item.matchName) + ')', function (raw, callError) {
+          var response = parseJson(raw);
+          if (callError || !response || response.ok !== true) {
+            localStatus.textContent = (callError || (response && response.error)) || 'After Effects could not apply this effect.';
+            setPanelStatus('Effect could not be applied.', 'error', localStatus.textContent);
+          } else {
+            localStatus.textContent = response.message || 'Effect added. Inspect the composition to verify its visible result.';
+            setPanelStatus('Effect applied.', '', localStatus.textContent, 1800);
+            localStatus.title = 'Host display name: ' + (response.displayName || item.name) + '\nEffect identifier: ' + (response.matchName || item.matchName || 'unavailable');
+          }
+          if (typeof completion === 'function') completion({ bridgeCalled: true, response: response, callError: callError, raw: raw });
+        });
+      }
+
+      function addText(parent, tagName, className, text) {
+        var element = document.createElement(tagName);
+        if (className) element.className = className;
+        element.textContent = text;
+        parent.appendChild(element);
+        return element;
+      }
+
+      function cleanDisplayText(value) {
+        return String(value == null ? '' : value).replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+      }
+
+      function itemKey(item) {
+        return String(item.id || item.path || item.name);
+      }
+
+      function traceDropResult(traceId, item, targetStatus, bridgeResult) {
+        var targetName = targetStatus && targetStatus.activeItemName ? '"' + targetStatus.activeItemName + '"' : '(none)';
+        var layerCount = targetStatus && typeof targetStatus.selectedLayerCount === 'number' ? targetStatus.selectedLayerCount : 0;
+        var response = bridgeResult && bridgeResult.response;
+        var bridgeMessage;
+        if (!bridgeResult || !bridgeResult.bridgeCalled) bridgeMessage = 'Apply bridge not called';
+        else if (bridgeResult.callError) bridgeMessage = 'Apply bridge error: ' + bridgeResult.callError;
+        else if (!response) bridgeMessage = 'Apply bridge returned unreadable data';
+        else if (response.ok) bridgeMessage = 'Apply bridge accepted the request';
+        else bridgeMessage = 'Apply bridge rejected it (' + (response.stage || 'unknown stage') + '): ' + (response.error || 'no error detail');
+        var traceText = 'Drop #' + traceId + ': ' + item.type + ' "' + cleanDisplayText(item.name || item.fileName || 'result') + '"; target comp ' + targetName + ', selected layers ' + layerCount + '; ' + bridgeMessage + '.';
+        dragDiagnosticStatus.textContent = traceText + ' Payload key=' + itemKey(item) + (item.matchName ? '; matchName=' + item.matchName : item.path ? '; path=' + item.path : '') + '.';
+        localStatus.textContent = traceText;
+        dragDiagnosticStatus.title = 'Drop #' + traceId + '\nPayload: type=' + item.type + ', key=' + itemKey(item) +
+          (item.matchName ? ', matchName=' + item.matchName : '') +
+          '\nTarget status: ' + JSON.stringify(targetStatus) +
+          '\nBridge called: ' + (bridgeResult && bridgeResult.bridgeCalled ? 'yes' : 'no') +
+          '\nBridge result: ' + JSON.stringify(bridgeResult || null);
+        localStatus.title = dragDiagnosticStatus.title;
+        if (!bridgeResult || !bridgeResult.bridgeCalled || !response || response.ok !== true) {
+          var stageError = response && response.error || (bridgeResult && bridgeResult.callError) || 'After Effects did not complete the request.';
+          var userMessage = response && response.stage === 'target-check' ?
+            (!targetStatus || !targetStatus.activeItemIsComp ? 'Open a composition and select a layer first.' : 'Select at least one layer first.') :
+            (item.type === 'preset' ? 'Preset could not be applied.' : 'Effect could not be applied.');
+          setPanelStatus(userMessage, 'error', stageError);
+        } else {
+          setPanelStatus(item.type === 'preset' ? 'Preset applied.' : 'Effect applied.', '', response.message || '', 1800);
+        }
+      }
+
+      function applyDroppedItem(item, traceId) {
+        if (applicationPending) {
+          writeDragDiagnostic('duplicate-request-blocked', traceId, { itemType: item.type, itemKey: itemKey(item), reason: 'A Searchy Apply request is already waiting for After Effects.' });
+          localStatus.textContent = 'Another Apply action is still waiting for After Effects to respond. Drop again after it finishes.';
+          dragDiagnosticStatus.textContent = localStatus.textContent;
+          setPanelStatus('Another action is still in progress.');
+          return;
+        }
+        applicationPending = true;
+        setPanelStatus('Checking the selected layer…');
+        var released = false;
+        function releaseDropGuard() {
+          if (released) return;
+          released = true;
+          applicationPending = false;
+        }
+        localStatus.textContent = 'Drop #' + traceId + ' received; payload and cached result matched. Checking After Effects selection…';
+        dragDiagnosticStatus.textContent = localStatus.textContent;
+        writeDragDiagnostic('composition-and-layer-check-started', traceId, { itemType: item.type, itemKey: itemKey(item) });
+        try {
+          hostCall('getApplyTargetStatus()', function (raw, callError) {
+            var targetStatus = parseJson(raw);
+            if (callError || !targetStatus || targetStatus.ok !== true) {
+              releaseDropGuard();
+              var targetError = callError || (targetStatus && targetStatus.error) || 'Could not read target status.';
+              writeDragDiagnostic('composition-and-layer-check-failed', traceId, { error: targetError, rawResponse: raw || null });
+              traceDropResult(traceId, item, targetStatus || { ok: false, error: targetError }, { bridgeCalled: false, response: { ok: false, stage: 'target-check', error: targetError } });
+              return;
+            }
+            if (!targetStatus.activeItemIsComp || targetStatus.selectedLayerCount < 1) {
+              releaseDropGuard();
+              var selectionError = !targetStatus.activeItemIsComp ? 'No active composition.' : 'No selected layer.';
+              writeDragDiagnostic('composition-and-layer-check-failed', traceId, { error: selectionError, target: targetStatus });
+              traceDropResult(traceId, item, targetStatus, { bridgeCalled: false, response: { ok: false, stage: 'target-check', error: selectionError } });
+              return;
+            }
+            writeDragDiagnostic('composition-and-layer-check-passed', traceId, { target: targetStatus });
+            localStatus.textContent = 'Drop #' + traceId + ' target OK: ' + targetStatus.activeItemName + ', ' + targetStatus.selectedLayerCount + ' selected layer(s). Calling Apply bridge…';
+            var complete = function (bridgeResult) {
+              releaseDropGuard();
+              var response = bridgeResult && bridgeResult.response;
+              writeDragDiagnostic('host-response-received', traceId, {
+                itemType: item.type, itemKey: itemKey(item), success: !!(response && response.ok === true),
+                callError: bridgeResult && bridgeResult.callError || null, response: response || null,
+                rawResponse: bridgeResult && bridgeResult.raw || null
+              });
+              traceDropResult(traceId, item, targetStatus, bridgeResult);
+            };
+            writeDragDiagnostic('host-application-request-sent', traceId, {
+              itemType: item.type, itemKey: itemKey(item), displayName: item.name || item.fileName || '',
+              matchName: item.type === 'effect' ? item.matchName || '' : null,
+              originalPresetPath: item.type === 'preset' ? item.path || '' : null,
+              target: targetStatus
+            });
+            if (item.type === 'effect') applyEffect(item, complete);
+            else applyPreset(item, complete);
+          });
+        } catch (error) {
+          releaseDropGuard();
+          writeDragDiagnostic('drop-application-exception', traceId, { error: String(error && error.message || error) });
+          traceDropResult(traceId, item, null, { bridgeCalled: false, callError: String(error && error.message || error), response: null });
+        }
+      }
+
+      function findDraggableItem(type, key) {
+        var source = type === 'effect' ? discoveredEffects : (type === 'preset' ? localPresets : []);
+        var i;
+        for (i = 0; i < source.length; i += 1) {
+          if (itemKey(source[i]) === key) return source[i];
+        }
+        return null;
+      }
+
+      function dragTransferTypes(event) {
+        var types = event && event.dataTransfer && event.dataTransfer.types;
+        return types ? Array.prototype.slice.call(types).map(function (type) { return String(type).toLowerCase(); }) : [];
+      }
+
+      function hasSearchyDragPayload(event) {
+        return dragTransferTypes(event).indexOf('application/x-aeus-result') !== -1;
+      }
+
+      function handleSearchyDrop(event) {
+        var raw;
+        var payload;
+        var item;
+        var traceId;
+        if (!event || !hasSearchyDragPayload(event) || event.__searchyDropHandled) return false;
+        // Mark before decoding or host work so a bubbling event cannot apply twice.
+        event.__searchyDropHandled = true;
+        event.preventDefault();
+        quickApplyDrop.className = '';
+        if (activeDragTrace) {
+          activeDragTrace.dropReceivedInsidePanel = true;
+          activeDragTrace.droppedInPanel = true;
+          activeDragTrace.droppedOnTarget = event.target === quickApplyDrop ||
+            (typeof quickApplyDrop.contains === 'function' && quickApplyDrop.contains(event.target));
+        }
+        traceId = activeDragTrace ? activeDragTrace.id : ++dragTraceSequence;
+        writeDragDiagnostic('drop-event-received-by-searchy', traceId, {
+          target: dragEventTargetInfo(event), dropTarget: event.target === quickApplyDrop,
+          transferTypes: dragTransferTypes(event),
+          activeDrag: activeDragTrace ? { type: activeDragTrace.type, key: activeDragTrace.key, name: activeDragTrace.name } : null
+        });
+        localStatus.textContent = 'Drop event received inside Searchy; decoding item data…';
+        dragDiagnosticStatus.textContent = localStatus.textContent;
+        try {
+          raw = event.dataTransfer.getData('application/x-aeus-result');
+          payload = JSON.parse(raw);
+        } catch (error) { payload = null; }
+        if (!payload || (payload.type !== 'effect' && payload.type !== 'preset') || typeof payload.key !== 'string' || !payload.key) {
+          writeDragDiagnostic('payload-decode-failed', traceId, { rawPayload: raw || '', transferTypes: dragTransferTypes(event) });
+          localStatus.textContent = 'This drop did not contain a valid Searchy effect or preset.';
+          localStatus.title = 'Drop event received, but payload type/key could not be decoded.';
+          dragDiagnosticStatus.textContent = localStatus.textContent;
+          dragDiagnosticStatus.title = localStatus.title;
+          return true;
+        }
+        writeDragDiagnostic('payload-decoded-successfully', traceId, { type: payload.type, key: payload.key });
+        item = findDraggableItem(payload.type, payload.key);
+        if (!item) {
+          writeDragDiagnostic('item-identification-failed', traceId, { type: payload.type, key: payload.key, reason: 'No matching item in the current cached catalogue.' });
+          localStatus.textContent = 'That result is no longer in the current search catalogue. Refresh and try again.';
+          localStatus.title = 'Drop event received. Payload decoded, but cached catalogue lookup failed.';
+          dragDiagnosticStatus.textContent = localStatus.textContent;
+          dragDiagnosticStatus.title = localStatus.title;
+          return true;
+        }
+        writeDragDiagnostic('item-identified', traceId, {
+          type: item.type, key: itemKey(item), displayName: item.name || item.fileName || '',
+          matchName: item.type === 'effect' ? item.matchName || '' : null,
+          originalPresetPath: item.type === 'preset' ? item.path || '' : null
+        });
+        selectedResultId = itemKey(item);
+        quickApplyDrop.className = 'drag-ready';
+        quickApplyDrop.textContent = 'Applying ' + cleanDisplayText(item.name || item.fileName || 'result') + '…';
+        applyDroppedItem(item, traceId);
+        window.setTimeout(function () {
+          quickApplyDrop.className = '';
+          quickApplyDrop.textContent = 'Drop an effect or preset anywhere in this panel to apply';
+        }, 1600);
+        return true;
+      }
+
+      function dragEventTargetInfo(event) {
+        var target = event && event.target;
+        return { id: target && target.id || '', tagName: target && (target.tagName || target.nodeName) || '', className: target && typeof target.className === 'string' ? target.className : '' };
+      }
+
+      function dragNodeInfo(node) {
+        if (!node) return null;
+        return { id: node.id || '', tagName: node.tagName || node.nodeName || '', className: typeof node.className === 'string' ? node.className : '' };
+      }
+
+      function dragCaptureSnapshot(event) {
+        var x = Number(event && event.clientX);
+        var y = Number(event && event.clientY);
+        var hasCoordinates = isFinite(x) && isFinite(y);
+        var rect = null;
+        var inside = null;
+        var hit = null;
+        var path = [];
+        var transferTypes = [];
+        try {
+          if (quickApplyDrop && typeof quickApplyDrop.getBoundingClientRect === 'function') {
+            var liveRect = quickApplyDrop.getBoundingClientRect();
+            rect = { left: liveRect.left, top: liveRect.top, right: liveRect.right, bottom: liveRect.bottom, width: liveRect.width, height: liveRect.height };
+            if (hasCoordinates) inside = x >= liveRect.left && x <= liveRect.right && y >= liveRect.top && y <= liveRect.bottom;
+          }
+        } catch (error) { rect = { error: String(error && error.message || error) }; }
+        try { if (hasCoordinates && typeof document.elementFromPoint === 'function') hit = dragNodeInfo(document.elementFromPoint(x, y)); }
+        catch (error) { hit = { error: String(error && error.message || error) }; }
+        try { transferTypes = dragTransferTypes(event); }
+        catch (error) { transferTypes = []; }
+        try {
+          var composed = event && typeof event.composedPath === 'function' ? event.composedPath() : [];
+          for (var i = 0; i < composed.length && i < 8; i += 1) path.push(dragNodeInfo(composed[i]));
+        } catch (error) { path = [{ error: String(error && error.message || error) }]; }
+        return {
+          clientX: hasCoordinates ? x : null,
+          clientY: hasCoordinates ? y : null,
+          target: dragNodeInfo(event && event.target),
+          currentTargetAtCapture: dragNodeInfo(event && event.currentTarget),
+          composedPath: path,
+          elementFromPoint: hit,
+          dropTargetRect: rect,
+          coordinatesInsideDropTarget: inside,
+          dataTransferTypes: transferTypes,
+          defaultPreventedBeforeTargetHandler: !!(event && event.defaultPrevented)
+        };
+      }
+
+      function observeDragEventAtDocument(eventName, event) {
+        if (!activeDragTrace) return;
+        var traceId = activeDragTrace.id;
+        var sequence = ++dragDiagnosticEventSequence;
+        var snapshot = dragCaptureSnapshot(event);
+        queueDragEventDiagnostic('document-' + eventName + '-capture', traceId, { eventSequence: sequence, eventName: eventName, phase: 'document-capture', observation: snapshot });
+        // Read only after synchronous target/bubble handlers have had their turn.
+        window.setTimeout(function () {
+          queueDragEventDiagnostic('document-' + eventName + '-after-dispatch', traceId, {
+            eventSequence: sequence,
+            eventName: eventName,
+            phase: 'after-dispatch',
+            defaultPreventedBeforeTargetHandler: snapshot.defaultPreventedBeforeTargetHandler,
+            defaultPreventedAfterHandlers: !!(event && event.defaultPrevented),
+            target: snapshot.target,
+            coordinatesInsideDropTarget: snapshot.coordinatesInsideDropTarget
+          });
+        }, 0);
+      }
+
+      // Temporary passive diagnostics observe every relevant document-level drag event.
+      // These capture listeners intentionally do not cancel, stop, or modify any event.
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (eventName) {
+        document.addEventListener(eventName, function (event) { observeDragEventAtDocument(eventName, event); }, true);
+      });
+
+      // Accept Searchy result payloads anywhere in this panel. Other payloads pass through.
+      document.addEventListener('dragover', function (event) {
+        if (!hasSearchyDragPayload(event)) return;
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+        if (quickApplyDrop.className !== 'drag-active' && quickApplyDrop.className !== 'drag-ready') quickApplyDrop.className = 'drag-active';
+      }, true);
+      document.addEventListener('drop', function (event) {
+        handleSearchyDrop(event);
+      }, true);
+
+      // Existing low-volume route diagnostics remain available for the previous test plan.
+      document.addEventListener('dragenter', function (event) {
+        if (!activeDragTrace) return;
+        var source = activeDragTrace.sourceElement;
+        if (source && (event.target === source || (typeof source.contains === 'function' && source.contains(event.target)))) return;
+        activeDragTrace.panelEntered = true;
+        if (activeDragTrace.panelDragEnterLogged) return;
+        activeDragTrace.panelDragEnterLogged = true;
+        writeDragDiagnostic('dragenter-inside-searchy', activeDragTrace.id, {
+          target: dragEventTargetInfo(event), transferTypes: dragTransferTypes(event), intendedTarget: event.target === quickApplyDrop
+        });
+      }, true);
+      document.addEventListener('dragover', function (event) {
+        if (!activeDragTrace) return;
+        var source = activeDragTrace.sourceElement;
+        if (source && (event.target === source || (typeof source.contains === 'function' && source.contains(event.target)))) return;
+        activeDragTrace.panelEntered = true;
+        if (activeDragTrace.panelDragOverLogged) return;
+        activeDragTrace.panelDragOverLogged = true;
+        writeDragDiagnostic('dragover-inside-searchy', activeDragTrace.id, {
+          target: dragEventTargetInfo(event), transferTypes: dragTransferTypes(event), intendedTarget: event.target === quickApplyDrop
+        });
+      }, true);
+      document.addEventListener('drop', function (event) {
+        if (!activeDragTrace) return;
+        var source = activeDragTrace.sourceElement;
+        if (source && (event.target === source || (typeof source.contains === 'function' && source.contains(event.target)))) return;
+        writeDragDiagnostic('drop-event-inside-searchy', activeDragTrace.id, {
+          target: dragEventTargetInfo(event), intendedTarget: event.target === quickApplyDrop,
+          transferTypes: dragTransferTypes(event)
+        });
+      }, true);
+
+      quickApplyDrop.addEventListener('dragenter', function (event) {
+        var accepted = hasSearchyDragPayload(event);
+        if (activeDragTrace && !activeDragTrace.targetDragEnterLogged) {
+          activeDragTrace.targetDragEnterLogged = true;
+          writeDragDiagnostic('dragenter-on-searchy-drop-target', activeDragTrace.id, { accepted: accepted, transferTypes: dragTransferTypes(event) });
+        }
+        if (!accepted) return;
+        event.preventDefault();
+        quickApplyDrop.className = 'drag-active';
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+      });
+
+      quickApplyDrop.addEventListener('dragover', function (event) {
+        var accepted = hasSearchyDragPayload(event);
+        if (activeDragTrace && !activeDragTrace.targetDragOverLogged) {
+          activeDragTrace.targetDragOverLogged = true;
+          writeDragDiagnostic('dragover-on-searchy-drop-target', activeDragTrace.id, { accepted: accepted, transferTypes: dragTransferTypes(event) });
+        }
+        if (!accepted) return;
+        event.preventDefault();
+        quickApplyDrop.className = 'drag-active';
+        localStatus.textContent = 'Drop target received dragover; reading a Searchy result is possible.';
+        dragDiagnosticStatus.textContent = localStatus.textContent;
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+      });
+      quickApplyDrop.addEventListener('dragleave', function () {
+        quickApplyDrop.className = '';
+      });
+      quickApplyDrop.addEventListener('drop', function (event) {
+        handleSearchyDrop(event);
+      });
+
+      function itemStatus(item) {
+        if (item.type === 'effect') return 'Effect';
+        if (item.type === 'plugin') return 'Plugin';
+        return 'Preset';
+      }
+
+      function renderRow(parent, match, depth) {
+        var item = match.item;
+        var wrap = document.createElement('div');
+        var row = document.createElement('button');
+        var name = document.createElement('span');
+        var subtitle = document.createElement('span');
+        var status = document.createElement('span');
+        var key = itemKey(item);
+        var lastApplyAt = 0;
+        var sourceDescription = item.type === 'effect' ? (item.category || item.source || 'After Effects') : (item.relativePath || item.source || 'Local folder');
+        var visibleName;
+        if (item.type === 'effect') {
+          // This is host-provided UI text. Keep it verbatim; textContent safely treats it as text.
+          visibleName = item.displayNameAvailable && item.displayName ? String(item.displayName) : String(item.name || 'Unnamed effect');
+        } else {
+          visibleName = cleanDisplayText(item.name || item.fileName || 'Unnamed item');
+        }
+        var title = visibleName + ' — ' + sourceDescription + (item.path ? ' — ' + item.path : '') + ' — ' + itemStatus(item);
+        function applyItemOnce() {
+          var now = new Date().getTime();
+          if (applicationPending) {
+            localStatus.textContent = 'An Apply action is still waiting for After Effects to respond.';
+            setPanelStatus('Another action is still in progress.');
+            return;
+          }
+          if (now - lastApplyAt < 450) return;
+          lastApplyAt = now;
+          applicationPending = true;
+          function finishApply() { applicationPending = false; }
+          try {
+            if (item.type === 'effect') applyEffect(item, finishApply);
+            else if (item.type === 'preset') applyPreset(item, finishApply);
+            else finishApply();
+          } catch (error) {
+            finishApply();
+            localStatus.textContent = 'Could not start the Apply action: ' + String(error && error.message || error);
+            setPanelStatus('Could not start applying the item.', 'error', localStatus.textContent);
+          }
+        }
+        wrap.className = 'tree-row-wrap';
+        row.type = 'button';
+        row.className = 'tree-row' + (key === selectedResultId ? ' selected' : '');
+        row.setAttribute('data-type', item.type || '');
+        row.setAttribute('data-tree-select', 'true');
+        row.setAttribute('aria-pressed', key === selectedResultId ? 'true' : 'false');
+        row.setAttribute('data-key', key);
+        row.style.paddingLeft = (4 + depth * 13) + 'px';
+        row.title = title;
+        if (item.type === 'effect' || item.type === 'preset') {
+          row.draggable = true;
+          row.setAttribute('aria-description', 'Draggable. Drop inside this panel to apply to selected layer(s). Direct drop onto the After Effects timeline is experimental.');
+          row.addEventListener('dragstart', function (event) {
+            var transfer = event.dataTransfer;
+            if (!transfer) return;
+            activeDragTrace = { id: ++dragTraceSequence, type: item.type, key: key, name: cleanDisplayText(item.name || item.fileName || ''), sourceElement: row, droppedInPanel: false, panelEntered: false, dropReceivedInsidePanel: false, droppedOnTarget: false, panelDragEnterLogged: false, panelDragOverLogged: false, targetDragEnterLogged: false, targetDragOverLogged: false };
+            transfer.effectAllowed = 'copy';
+            transfer.setData('application/x-aeus-result', JSON.stringify({ type: item.type, key: key }));
+            transfer.setData('text/plain', cleanDisplayText(item.name || item.fileName || ''));
+            if (item.type === 'effect') transfer.setData('application/x-aeus-effect-match-name', String(item.matchName || ''));
+            if (item.type === 'preset' && item.path) transfer.setData('com.adobe.cep.dnd.file.0', String(item.path));
+            writeDragDiagnostic('drag-started', activeDragTrace.id, {
+              type: item.type, key: key, displayName: activeDragTrace.name,
+              matchName: item.type === 'effect' ? item.matchName || '' : null,
+              originalPresetPath: item.type === 'preset' ? item.path || '' : null,
+              payload: { type: item.type, key: key }, transferTypes: transfer.types ? Array.prototype.slice.call(transfer.types) : []
+            });
+            quickApplyDrop.className = 'drag-active';
+            localStatus.textContent = 'Drag #' + activeDragTrace.id + ' started: ' + item.type + ' "' + activeDragTrace.name + '". Drop anywhere inside Searchy.';
+            localStatus.title = 'Drag payload: type=' + item.type + ', key=' + key + (item.matchName ? ', matchName=' + item.matchName : '') + (item.path ? ', path=' + item.path : '');
+            dragDiagnosticStatus.textContent = 'Drag #' + activeDragTrace.id + ' started: type=' + item.type + '; name="' + activeDragTrace.name + '"; key=' + key + (item.matchName ? '; matchName=' + item.matchName : item.path ? '; path=' + item.path : '') + '. Drop anywhere inside Searchy.';
+            dragDiagnosticStatus.title = localStatus.title;
+          });
+          row.addEventListener('dragend', function (event) {
+            flushDragEventDiagnostics();
+            if (quickApplyDrop.className === 'drag-active') quickApplyDrop.className = '';
+            if (activeDragTrace && activeDragTrace.droppedOnTarget) {
+              writeDragDiagnostic('drag-ended-on-searchy-drop-target', activeDragTrace.id, { dropEffect: event && event.dataTransfer ? event.dataTransfer.dropEffect : '' });
+            } else if (activeDragTrace && activeDragTrace.dropReceivedInsidePanel) {
+              writeDragDiagnostic('drag-ended-inside-searchy-outside-target', activeDragTrace.id, { dropEffect: event && event.dataTransfer ? event.dataTransfer.dropEffect : '', panelWideDropHandlerReceived: true });
+              localStatus.textContent = 'Searchy received the panel drop and routed the item to Apply. Check the status above for the result.';
+              setPanelStatus('Applying selected item…');
+              dragDiagnosticStatus.textContent = localStatus.textContent;
+              dragDiagnosticStatus.title = 'The panel-wide handler received this supported Searchy payload outside the compact hint area.';
+            } else if (activeDragTrace && activeDragTrace.panelEntered) {
+              writeDragDiagnostic('drag-ended-inside-searchy-without-drop', activeDragTrace.id, { dropEffect: event && event.dataTransfer ? event.dataTransfer.dropEffect : '', targetDropHandlerReceived: false });
+              localStatus.textContent = 'Drag entered Searchy, but no supported drop was received.';
+              setPanelStatus('Drop was not received. Try again or use Apply.');
+              dragDiagnosticStatus.textContent = localStatus.textContent;
+              dragDiagnosticStatus.title = 'Searchy saw dragenter/dragover within the panel but no supported drop event.';
+            } else if (activeDragTrace) {
+              writeDragDiagnostic('drag-ended-outside-searchy', activeDragTrace.id, { dropEffect: event && event.dataTransfer ? event.dataTransfer.dropEffect : '', panelEntered: false });
+              localStatus.textContent = 'Drag #' + activeDragTrace.id + ' ended outside the extension. Check the AE layer/effect stack; CEP cannot observe whether a native drop was accepted.';
+              setPanelStatus('Drop ended outside Searchy. Use Apply to apply the item.');
+              localStatus.title = 'The extension saw dragstart and dragend but no in-panel drop event. Native After Effects drop outcome is not available to the extension.';
+              dragDiagnosticStatus.textContent = localStatus.textContent;
+              dragDiagnosticStatus.title = localStatus.title;
+            }
+            activeDragTrace = null;
+          });
+        }
+        name.className = 'row-name';
+        name.textContent = visibleName;
+        subtitle.className = 'row-subtitle';
+        subtitle.textContent = cleanDisplayText(sourceDescription);
+        status.className = 'row-status';
+        status.setAttribute('data-type', item.type || '');
+        status.textContent = itemStatus(item);
+        row.appendChild(name);
+        row.appendChild(subtitle);
+        row.appendChild(status);
+        row.addEventListener('click', function () {
+          selectedResultId = key;
+          Array.prototype.slice.call(results.querySelectorAll('[data-tree-select]')).forEach(function (entry) {
+            var selected = entry.getAttribute('data-key') === key;
+            entry.className = 'tree-row' + (selected ? ' selected' : '');
+            entry.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          });
+        });
+        row.addEventListener('dblclick', function (event) {
+          var target = event.target;
+          while (target && target !== row) {
+            if (target.className && String(target.className).indexOf('row-apply') !== -1) return;
+            target = target.parentNode;
+          }
+          selectedResultId = key;
+          applyItemOnce();
+        });
+        wrap.appendChild(row);
+        if (item.type === 'preset' || item.type === 'effect') {
+          var apply = document.createElement('button');
+          apply.type = 'button';
+          apply.className = (item.type === 'preset' ? 'apply-preset' : 'apply-effect') + ' row-apply';
+          apply.textContent = 'Apply';
+          apply.title = item.type === 'preset' ? 'Apply this preset to the selected layer(s)' : 'Apply this effect to the selected layer(s)';
+          apply.setAttribute('aria-label', 'Apply ' + cleanDisplayText(item.name));
+          apply.addEventListener('click', function (event) {
+            event.stopPropagation();
+            selectedResultId = key;
+            applyItemOnce();
+          });
+          wrap.appendChild(apply);
+        }
+        parent.appendChild(wrap);
+      }
+
+      function totalItems(node) {
+        var count = node.items.length;
+        node.children.forEach(function (child) { count += totalItems(child); });
+        return count;
+      }
+
+      function renderRows(parent, matches, depth, searching) {
+        var rowLimit = searching ? matches.length : initialGroupLimit;
+        var shown = matches.slice(0, rowLimit);
+        shown.forEach(function (match) { renderRow(parent, match, depth); });
+        if (!searching && matches.length > initialGroupLimit) {
+          var more = document.createElement('button');
+          more.type = 'button';
+          more.className = 'more-button';
+          more.textContent = 'Show ' + (matches.length - initialGroupLimit) + ' more';
+          more.addEventListener('click', function () {
+            matches.slice(initialGroupLimit).forEach(function (match) { renderRow(parent, match, depth); });
+            more.parentNode.removeChild(more);
+          });
+          parent.appendChild(more);
+        }
+      }
+
+      function renderTreeNode(parent, node, depth, searching, isRoot) {
+        var details = document.createElement('details');
+        var summary = document.createElement('summary');
+        var body = document.createElement('div');
+        var total = totalItems(node);
+        details.className = isRoot ? 'tree-root' : 'tree-category';
+        details.open = searching && total > 0;
+        summary.className = 'tree-heading' + (isRoot ? ' root-heading' : ' category-heading') + (node.matchParent ? ' match-parent' : '');
+        summary.setAttribute('data-tree-heading', 'true');
+        summary.style.paddingLeft = (4 + depth * 13) + 'px';
+        summary.title = node.title || node.label;
+        var label = document.createElement('span');
+        label.className = 'tree-label';
+        label.textContent = cleanDisplayText(node.label);
+        summary.appendChild(label);
+        var badge = document.createElement('span');
+        badge.className = 'tree-count';
+        badge.textContent = String(total);
+        summary.appendChild(badge);
+        details.appendChild(summary);
+        body.className = 'tree-children';
+        renderRows(body, node.items, depth + 1, searching);
+        node.children.forEach(function (child) { renderTreeNode(body, child, depth + 1, searching, false); });
+        details.appendChild(body);
+        parent.appendChild(details);
+      }
+
+      function render(query) {
+        var allItems = searchCatalogue;
+        var searching = !!window.AEUSSearch.normalize(query);
+        var allMatches = searching ? window.AEUSSearch.search(allItems, query) : allItems;
+        var matchesByType = itemsForFilter(allMatches, activeFilter);
+        var matches = searching ? matchesByType : [];
+        var sourceTree = browseTreeCaches[activeFilter] || browseTreeCache;
+        var tree = searching ? (matches.length ? window.AEUSResultTree.build(allItems, matches, true, catalogueTreeIndex) : []) : (sourceTree || browseTreeCache || window.AEUSResultTree.build(allItems, [], false, catalogueTreeIndex));
+        updateTabCounts(allMatches);
+        count.title = effectHostVersion ? discoveredEffects.length + ' host-listed effects · After Effects ' + effectHostVersion : '';
+        count.title = effectHostVersion ? discoveredEffects.length + ' host-listed effects · After Effects ' + effectHostVersion : '';
+        clearSearchButton.hidden = !query;
+        results.textContent = '';
+        if (searching) {
+          count.textContent = matches.length + (matches.length === 1 ? ' match' : ' matches');
+          if (!matches.length) {
+            addText(results, 'div', 'empty', 'No matches. Try another search.');
+            return;
+          }
+        } else {
+          var visibleItemCount = itemsForFilter(allItems, activeFilter).length;
+          count.textContent = visibleItemCount ? visibleItemCount + (visibleItemCount === 1 ? ' item' : ' items') : 'Browse categories';
+          if (!allItems.length && !effectsLoaded && !localLoaded) addText(results, 'div', 'empty', 'Loading local catalogue…');
+          else if (!allItems.length) addText(results, 'div', 'empty', 'No indexed effects or files. Use the refresh buttons above.');
+        }
+        tree.forEach(function (node) { if (totalItems(node) > 0) renderTreeNode(results, node, 0, searching, true); });
+      }
+
+      function visibleTreeItems() {
+        var output = [];
+        function visit(parent) {
+          Array.prototype.slice.call(parent.children || []).forEach(function (child) {
+            if (child.getAttribute && (child.getAttribute('data-tree-heading') === 'true' || child.getAttribute('data-tree-select') === 'true')) output.push(child);
+            if (child.tagName && child.tagName.toLowerCase() === 'details' && !child.open) return;
+            visit(child);
+          });
+        }
+        visit(results);
+        return output;
+      }
+
+      input.addEventListener('input', function () { render(input.value); });
+      clearSearchButton.addEventListener('click', function () { input.value = ''; render(''); input.focus(); });
+      filterTabs.addEventListener('click', function (event) {
+        var tab = event.target;
+        while (tab && tab !== filterTabs && !tab.getAttribute('data-filter')) tab = tab.parentNode;
+        if (!tab || tab === filterTabs) return;
+        activeFilter = tab.getAttribute('data-filter') || 'all';
+        Array.prototype.slice.call(filterTabs.children).forEach(function (entry) {
+          entry.setAttribute('aria-selected', entry === tab ? 'true' : 'false');
+        });
+        render(input.value);
+      });
+      filterTabs.addEventListener('keydown', function (event) {
+        var tabs = Array.prototype.slice.call(filterTabs.children);
+        var current = tabs.indexOf(document.activeElement);
+        var next = event.key === 'ArrowRight' ? current + 1 : (event.key === 'ArrowLeft' ? current - 1 : -1);
+        if (next !== -1 && tabs.length) {
+          event.preventDefault();
+          if (next < 0) next = tabs.length - 1;
+          if (next >= tabs.length) next = 0;
+          tabs[next].focus();
+        }
+      });
+      settingsMenu.hidden = true;
+      settingsToggle.addEventListener('click', function () { setSettingsOpen(settingsMenu.hidden); });
+      document.addEventListener('click', function (event) {
+        if (event.target === settingsToggle || settingsMenu.contains(event.target)) return;
+        setSettingsOpen(false);
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !settingsMenu.hidden) {
+          setSettingsOpen(false);
+          settingsToggle.focus();
+        }
+      });
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') {
+          var first = window.AEUSSearch.normalize(input.value) ? results.querySelector('[data-tree-select]') : results.querySelector('[data-tree-heading]');
+          if (first) { event.preventDefault(); first.focus(); }
+        }
+      });
+      results.addEventListener('keydown', function (event) {
+        var navItems = visibleTreeItems();
+        var current = navItems.indexOf(document.activeElement);
+        var summary = document.activeElement;
+        var disclosure = summary && summary.tagName && summary.tagName.toLowerCase() === 'summary' ? summary.parentNode : null;
+        if (event.key === 'ArrowDown' && current !== -1) {
+          event.preventDefault();
+          if (navItems[current + 1]) navItems[current + 1].focus();
+        } else if (event.key === 'ArrowUp' && current !== -1) {
+          event.preventDefault();
+          if (navItems[current - 1]) navItems[current - 1].focus(); else input.focus();
+        } else if (event.key === 'ArrowRight' && disclosure && !disclosure.open) {
+          event.preventDefault();
+          disclosure.open = true;
+        } else if (event.key === 'ArrowRight' && disclosure && disclosure.open) {
+          event.preventDefault();
+          if (navItems[current + 1]) navItems[current + 1].focus();
+        } else if (event.key === 'ArrowLeft' && disclosure && disclosure.open) {
+          event.preventDefault();
+          disclosure.open = false;
+        } else if (event.key === 'ArrowLeft' && disclosure) {
+          var parentDetails = disclosure.parentNode && disclosure.parentNode.parentNode;
+          var parentSummary = parentDetails && parentDetails.querySelector ? parentDetails.querySelector('[data-tree-heading]') : null;
+          if (parentSummary) { event.preventDefault(); parentSummary.focus(); }
+        } else if (event.key === 'Escape') {
+          input.focus();
+        }
+      });
+      addFolderButton.addEventListener('click', addPresetFolder);
+      refreshLocalButton.addEventListener('click', refreshLocalFiles);
+      refreshButton.addEventListener('click', refreshEffects);
+      [addFolderButton, refreshLocalButton, refreshButton].forEach(function (button) {
+        button.addEventListener('click', function () { setSettingsOpen(false); });
+      });
+      initializeDragDiagnosticLog();
+      renderFolders();
+      refreshLocalFiles();
+      refreshEffects();
+    }());
+  </script>
+</body>
+</html>

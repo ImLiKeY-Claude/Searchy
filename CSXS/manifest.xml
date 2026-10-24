@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="12.0" ExtensionBundleId="com.aeuniversalsearch.minimal" ExtensionBundleVersion="0.0.1" ExtensionBundleName="Searchy">
+  <ExtensionList>
+    <Extension Id="com.aeuniversalsearch.minimal.panel" Version="0.0.1" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="AEFT" Version="[13.0,99.9]" />
+    </HostList>
+    <LocaleList><Locale Code="All" /></LocaleList>
+    <RequiredRuntimeList><RequiredRuntime Name="CSXS" Version="12.0" /></RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.aeuniversalsearch.minimal.panel">
+      <DispatchInfo>
+          <Resources>
+            <MainPath>./index.html</MainPath>
+            <ScriptPath>./host.jsx</ScriptPath>
+            <CEFCommandLine />
+          </Resources>
+          <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
+          <UI>
+            <Type>Panel</Type>
+            <Menu>Searchy</Menu>
+            <Geometry>
+              <Size>
+                <Width>320</Width>
+                <Height>220</Height>
+              </Size>
+              <MinSize>
+                <Width>240</Width>
+                <Height>160</Height>
+              </MinSize>
+            </Geometry>
+          </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

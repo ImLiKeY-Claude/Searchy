@@ -1,0 +1,30 @@
+# Installed-extension backup snapshots kept in the project folder
+/AE-CEP-Minimal-installed-backup-*/
+
+# Local diagnostic output and temporary files
+Searchy-*-diagnostics*.jsonl
+*.log
+*.tmp
+
+# Generated dependency, test, and distribution output
+node_modules/
+/coverage/
+/dist/
+/build/
+
+# CEP debugging and operating-system metadata
+**/.debug
+.DS_Store
+[Tt]humbs.db
+[Dd]esktop.ini
+
+# Local environment files; keep a safe example template if added
+.env
+.env.*
+!.env.example
+
+# Potential private code-signing material
+*.key
+*.pem
+*.p12
+*.pfx

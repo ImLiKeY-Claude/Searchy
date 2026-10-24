@@ -1,0 +1,24 @@
+var assert = require('assert');
+var childProcess = require('child_process');
+var path = require('path');
+var script = path.join(__dirname, 'panelBehavior.test.js');
+var env = Object.assign({}, process.env, { AEUS_PERF_PRESETS: '2677' });
+delete env.AEUS_PROFILE_BASE;
+var result = childProcess.spawnSync(process.execPath, [script], { env: env, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+assert.strictEqual(result.status, 0, result.stderr || result.stdout || 'panel performance harness failed');
+var lines = result.stdout.split(/\r?\n/).filter(function (line) { return line.indexOf('PROFILE ') === 0; });
+var profiles = lines.map(function (line) { return JSON.parse(line.slice('PROFILE '.length)); });
+assert.strictEqual(profiles.length, 7, 'profile all requested queries plus a real preset name and no-match case');
+var expectedMatches = { 'Deep Glow':1, 'Glow Dee':1, glow:307, sh:539, shake:537, "Jarle's Deadpool Handheld Camera Long Lens":1, 'no-matches-expected':0 };
+profiles.forEach(function (profile) {
+  assert.strictEqual(profile.catalogueItems, 3790, 'benchmark catalogue should approximate this installation');
+  assert.strictEqual(profile.matches, expectedMatches[profile.query], 'expected match count for ' + profile.query);
+  assert.strictEqual(profile.renderedRows, profile.matches, 'all eligible search matches should be rendered');
+  assert.strictEqual(profile.maxSearchTreeItems, profile.matches, 'search tree should be built from the complete match set');
+  assert.ok(profile.medianInputHandlerMs >= profile.medianSearchMs, 'input handler includes search computation');
+});
+assert.ok(profiles.some(function (profile) { return profile.query === 'Glow Dee' && profile.matches > 0; }), 'multiword in-app verified scenario should be included');
+assert.ok(profiles.some(function (profile) { return profile.query === "Jarle's Deadpool Handheld Camera Long Lens" && profile.matches > 0; }), 'real local preset name should be included');
+assert.ok(profiles.some(function (profile) { return profile.query === 'no-matches-expected' && profile.matches === 0; }), 'empty result path should be included');
+profiles.forEach(function (profile) { console.log('PERF ' + JSON.stringify(profile)); });
+console.log('PASS: panel search profile at 3,790 catalogue entries; computation, tree build, and simulated DOM work are timed separately.');
